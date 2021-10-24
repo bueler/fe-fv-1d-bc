@@ -9,7 +9,7 @@
 % macros
 \usepackage{amssymb,xspace}
 \usepackage[final]{graphicx}
-\usepackage{hyperref}
+\usepackage[colorlinks=true]{hyperref}
 
 \newcommand{\regfigure}[3]{\includegraphics[height=#2in,width=#3in]{#1.eps}}
 
@@ -52,6 +52,91 @@
 
 \maketitle
 
-foo
+Consider first the plain Poisson equation on an interval with a generic source function and a non-homogeneous Neumann condition at the right end:
+\begin{equation}
+-u''(x) = f(x), \qquad u(0)=0, \quad u'(0)=A \label{eq:plain}
+\end{equation}
+where $f(x)$ is continuous.  Suppose $X = W_0^{1,2}[0,1]$ is the obvious Sobolev space incorporating the left-hand Dirichlet boundary condition.  For any test function $v\in X$, \eqref{eq:plain} for a smooth $u$ implies the continuum weak form
+\begin{equation}
+\int_0^1 u'(x) v'(x)\,dx = \int_0^1 f(x) v(x)\,dx + A v(1), \label{eq:plainweak}
+\end{equation}
+derived using integration-by-parts.  Note how the boundary value appears on the right.
+
+We now seek $u\in X$ solving \eqref{eq:plainweak}, which exists by standard theory, and then $f$ continuous implies $u\in C^2[0,1]$ is a strong solution of \eqref{eq:plain} via additional standard theory.  However, the main idea is that \eqref{eq:plain} and \eqref{eq:plainweak} are essentially-equivalent statements of the continuuum problem.
+
+A finite-volume type scheme with $N$ equal cells $\omega_j = (x_j-h/2,x_j+h/2)$ of width $h=1/N$ has cell-centered grid points
+\begin{equation}
+x_j = (j+1/2) h, \label{eq:fvgridpoints}
+\end{equation}
+for $j=0,\dots,N-1$.
+
+In this context, for all but the first and last grid points $x_0,x_{N-1}$ we can recover the usual/obvious centered finite-difference equations by supposing the test function $v=\psi_i \in X$ is a piecewise-linear hat function with values $\psi_i(x_j) = \delta_{ij}$.  Suppose $1 \le i \le N-2$, note $\psi_i(1)=0$, and compute from \eqref{eq:plainweak}
+\begin{align*}
+\int_0^1 u'(x) \psi_i'(x)\,dx &= \int_0^1 f(x) \psi_i(x)\,dx \\
+\int_{x_{i-1}}^{x_i} u'(x) \frac{+1}{h}\,dx + \int_{x_{i}}^{x_{i+1}} u'(x)  \frac{-1}{h}\,dx &= \int_0^1 f(x) \psi_i(x)\,dx \\
+\frac{u(x_i)-u(x_{i-1})}{h} - \frac{u(x_{i+1})-u(x_i)}{h} &= \int_0^1 f(x) \psi_i(x)\,dx \\
+- \frac{u(x_{i+1}) - 2 u(x_i) + u(x_{i-1})}{h^2} &= \frac{1}{h} \int_0^1 f(x) \psi_i(x)\,dx = \bar f_i.
+\end{align*}
+In the last equation we have defined $\bar f_i$ to be the given integral, an average because $\int \psi_i(x)\,dx = h$.  Note that the final equation
+\begin{equation}
+- \frac{u(x_{i+1}) - 2 u(x_i) + u(x_{i-1})}{h^2} = \bar f_i, \qquad 1 \le i \le N-2, \label{eq:exactfdgeneric}
+\end{equation}
+is an exact ``finite-difference'' result for the continuum solution $u(x)$.  Observe that if we compute $\bar f_i$ by the trapezoid rule using points $x_{i-1},x_i,x_{i+1}$ we get the quadrature
+\begin{equation}
+\bar f_i \approx f(x_i), \qquad 1 \le i \le N-2. \label{eq:fquadraturegeneric}
+\end{equation}
+
+There is a modified equation for the left end $x=0$ but its precise form does not concern us here.  One can construct it by defining $\tilde \psi_0(x)$ to have values $\psi_0(0)=0, \psi_0(x_0)=1, \psi_0(x_1)=0$, or by re-defining the grid so that the first grid point is at the boundary location $x=0$.  In the first case one gets an additional finite-difference equation relating $u(x_0)$ and $u(x_1)$, and in the second case one can simply write $u(x_0)=u(0)=0$.  Suffice it to say we have an $i=0$ equation in the linear system.
+
+At the right end we propose a modified hat function for the final grid point.  Suppose $\tilde \psi_{N-1}(x) \in X$ is continuous and piecewise-linear and satisfies $\tilde\psi_{N-1}(x_j)=0$ for $j=0,\dots,N-2)$, $\tilde psi_{N-1}(x_{N-1})=1$, and $\tilde \psi_{N-1}(x)=1$ for $x_{N-1} \le x \le 1$.  That is, $\tilde \psi_{N-1}$ has constant value $1$ between the last grid point $x_{N-1}$ and $x=1$, but otherwise is a standard hat function.  Note $\int \tilde \psi_{N-1}(x)\,dx = h$ again (\emph{though in a different shape}).  Then from the weak form \eqref{eq:plainweak} we have
+\begin{align*}
+\int_0^1 u'(x) \tilde \psi_{N-1}'(x)\,dx &= \int_0^1 f(x) \tilde \psi_{N-1}(x) \,dx + A \\
+\frac{u(x_{N-1}) - u(x_{N-2})}{h} &= \int_0^1 f(x) \tilde \psi_{N-1}(x) \,dx + A.
+\end{align*}
+Defining $\bar f_{N-1} = h^{-1} \int_0^1 f(x) \tilde \psi_{N-1}(x) \,dx$, we have
+\begin{equation}
+\frac{u(x_{N-1}) - u(x_{N-2})}{h} = h \bar f_{N-1} + A.  \label{eq:exactfdright}
+\end{equation}
+Again \eqref{eq:exactfdright} is an exact ``finite-difference'' result for the continuum solution $u(x)$.
+
+If we compute $\bar f_{N-1}$ by the trapezoid rule using points $x_{N-2},x_{N-1},1$, i.e.~the points on which $\tilde \psi_{N-1}$ is constructed, we get the quadrature
+\begin{equation}
+\bar f_{N-1} \approx f(x_{N-1}) + \frac{1}{2} f(1). \label{eq:fquadratureright}
+\end{equation}
+
+Let us write this as a tridiagonal linear system.  Clearing denominators in \eqref{eq:exactfdgeneric} and \eqref{eq:exactfdright}, and giving generic coefficients to the un-important $x_0$ equation, we have the following system for the exact values of the continuum solution on the cell-centered grid points, i.e.~$u(x_0),\dots,u(x_{N-1})$:
+\begin{equation}
+\begin{bmatrix}
+\alpha_0 & \beta_0 & & & & \\
+-1 & 2 & -1 & & & \\
+   & -1 & 2 & -1 & & \\
+ & & \ddots & \ddots & \ddots & \\
+ & & & -1 & 2 & -1 \\
+ & & & & -1 & 1
+\end{bmatrix}
+\begin{bmatrix}
+u(x_0) \\ u(x_1) \\ u(x_2) \\ \vdots \\ u(x_{N-2}) \\ u(x_{N-1})
+\end{bmatrix}
+=
+\begin{bmatrix}
+\gamma_0 \\
+h^2 \bar f_1 \\
+h^2 \bar f_2 \\
+\vdots \\
+h^2 \bar f_{N-2} \\
+h^2 \bar f_{N-1} + h A
+\end{bmatrix}
+\approx
+\begin{bmatrix}
+\hat\gamma_0 \\
+h^2 f(x_1) \\
+h^2 f(x_2) \\
+\vdots \\
+h^2 f(x_{N-2}) \\
+h^2 f(x_{N-1}) + \frac{1}{2} h^2 f(1) + h A
+\end{bmatrix}
+\label{eq:linsys}
+\end{equation}
+The equality is the exact finite-difference statement from the continuum weak form, while ``$\approx$'' arises from the indicated quadrature of $f(x)$.
 \end{document}
 
